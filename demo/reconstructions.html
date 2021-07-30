@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="jquery-3.5.1.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* {box-sizing: border-box;}
+
+.img-zoom-container {
+  position: relative;
+  display:inline-block;
+  top = 0;
+  left = 0;
+}
+.img-zoom-lens {
+  position: absolute;
+  border: 1px solid #d4d4d4;
+  /*set the size of the lens:*/
+  width: 40px;
+  height: 40px;
+}
+
+.img-zoom-result {
+  border: 1px solid #d4d4d4;
+  /*set the size of the result div:*/
+  width: 270px;
+  height: 270px;
+  display:inline-block;
+  vertical-align: top;
+  position:relative;
+}
+
+.text-block {
+  font-family: Arial;
+  position: absolute;
+  bottom: 0px;
+  left:0px;
+  right: 0px;
+  background-color: white;
+  color: black;
+  padding-left: 0px;
+  padding-right: 0px;
+  text-align: center;
+  opacity: 0.6;
+}
+
+.img-zoom-result-bott {
+  border: 1px solid #d4d4d4;
+  /*set the size of the result div:*/
+  width: 270px;
+  height: 270px;
+  display:inline-block;
+  vertical-align: bottom;
+}
+
+.bottomimg
+{
+  position:absolute;
+  top: 0px;
+  left: 0px;
+  z-index: 1;
+  display:inline-block;
+}
+.topimg
+{
+  position:relative;
+  top: 0px;
+  left: 0px;
+  z-index: 2;
+  display:inline-block;
+}
+
+</style>
+<script>
+
+$( document ).ready(function() {
+    $("#myselect").val(imagename);
+    $("#mylaplacian").val(lapllevel);
+});
+
+function saveAndRefresh(){
+  var imagename = $( "#myselect option:selected" ).text();
+  var lapllevel = $( "#mylaplacian option:selected" ).text();
+  localStorage.setItem("imagename", imagename);
+  localStorage.setItem("lapllevel", lapllevel);
+  window.location.reload();
+}
+
+function imageZoom(imgID, resultID, lens) {
+  var img, lens, result, cx, cy;
+  img = document.getElementById(imgID);
+  result = document.getElementById(resultID);
+  var hasListener = true;
+  /*create lens:*/
+  if (lens == undefined)
+  {
+    lens = document.createElement("DIV");
+    lens.setAttribute("class", "img-zoom-lens");
+    /*insert lens:*/
+    img.parentElement.insertBefore(lens, img);
+    hasListener = false;
+  }
+
+  /*calculate the ratio between result DIV and lens:*/
+  cx = result.offsetWidth / lens.offsetWidth;
+  cy = result.offsetHeight / lens.offsetHeight;
+  /*set background properties for the result DIV:*/
+  result.style.backgroundImage = "url('" + img.src + "')";
+  result.style.backgroundSize = (img.width * cx) + "px " + (img.height * cy) + "px";
+  /*execute a function when someone moves the cursor over the image, or the lens:*/
+  lens.addEventListener("mousemove", moveLens);
+  img.addEventListener("mousemove", moveLens);
+  /*and also for touch screens:*/
+  lens.addEventListener("touchmove", moveLens);
+  img.addEventListener("touchmove", moveLens);
+
+  function moveLens(e) {
+    var pos, x, y;
+    /*prevent any other actions that may occur when moving over the image:*/
+    e.preventDefault();
+    /*get the cursor's x and y positions:*/
+    pos = getCursorPos(e);
+    /*calculate the position of the lens:*/
+    x = pos.x - (lens.offsetWidth / 2);
+    y = pos.y - (lens.offsetHeight / 2);
+    /*prevent the lens from being positioned outside the image:*/
+    if (x > img.width - lens.offsetWidth) {x = img.width - lens.offsetWidth;}
+    if (x < 0) {x = 0;}
+    if (y > img.height - lens.offsetHeight) {y = img.height - lens.offsetHeight;}
+    if (y < 0) {y = 0;}
+    /*set the position of the lens:*/
+    lens.style.left = x + "px";
+    lens.style.top = y + "px";
+    /*display what the lens "sees":*/
+    result.style.backgroundPosition = "-" + (x * cx) + "px -" + (y * cy) + "px";
+  }
+  function getCursorPos(e) {
+    var a, x = 0, y = 0;
+    e = e || window.event;
+    /*get the x and y positions of the image:*/
+    a = img.getBoundingClientRect();
+    /*calculate the cursor's x and y coordinates, relative to the image:*/
+    x = e.pageX - a.left;
+    y = e.pageY - a.top;
+    /*consider any page scrolling:*/
+    x = x - window.pageXOffset;
+    y = y - window.pageYOffset;
+    return {x : x, y : y};
+  }
+  return lens;
+}
+</script>
+</head>
+<body>
+
+<h1>Demo for TAP submission</h1>
+
+<p>
+The displayed images are an extended version of Figures 1, 5 of the paper. Hovering the mouse on the image, it is possible to compare the four methods (L2, L2 ours, LPIPS, LPIPS ours).</br>
+The area under the magnifier (white square) is displayed for each method on the right of the full resolution image together with the zoomed version and the standard foveation.</br>
+The red and green rings are the boundaries between full resolution-near periphery and near periphery-far periphery, respectively. These three regions are blended in the boundary with a smooth transition.</br>
+Below the image, the Laplacian level is displayed in the second row. </br>
+You may want to click on each square to display the full image. </br>
+
+Please use the following menu to change the displayed image and the desired level from the Laplacian pyramid to see differences in different frequency bands.
+</p>
+
+Image:
+<select id="myselect">
+    <option value="florence">florence</option>
+    <option value="houses">houses</option>
+    <option value="interior">interior</option>
+    <option value="island">island</option>
+    <option value="leaves">leaves</option>
+    <option value="pool">pool</option>
+    <option value="sun">sun</option>
+    <option value="trucks">trucks</option>
+    <option value="wheat">wheat</option>
+    <option value="winter">winter</option>
+</select>
+&nbsp; &nbsp;
+Laplacian level:
+<select id="mylaplacian">
+    <option value="0">0</option>
+    <option value="1">1</option>
+    <option value="2">2</option>
+</select>
+<button onClick="saveAndRefresh();">Submit</button>
+
+<p>Mouse over the image:</p>
+<p id="selectedimg"></p>
+
+<div class="img-zoom-container">
+  <div class="topimg">
+    <img id="gt_rings" width="960" height="540">
+  </div>
+  <div class="bottomimg">
+    <img id="gt" width="960" height="540">
+  </div>
+  <div class="bottomimg">
+    <img id="blur" width="960" height="540">
+  </div>
+  <div class="bottomimg">
+    <img id="L2_ground" width="960" height="540">
+  </div>
+  <div class="bottomimg">
+    <img id="L2_synth" width="960" height="540">
+  </div>
+  <div class="bottomimg">
+    <img id="LPIPS_ground"  width="960" height="540">
+  </div>
+  <div class="bottomimg">
+    <img id="LPIPS_synth" width="960" height="540">
+  </div>
+
+ <!--laplacian level 1-->
+ <div class="bottomimg">
+   <img id="gt_lapl"  width="960" height="540">
+ </div>
+  <div class="bottomimg">
+    <img id="L2_ground_lapl"  width="960" height="540">
+  </div>
+  <div class="bottomimg">
+    <img id="L2_synth_lapl"  width="960" height="540">
+  </div>
+  <div class="bottomimg">
+    <img id="LPIPS_ground_lapl"  width="960" height="540">
+  </div>
+  <div class="bottomimg">
+    <img id="LPIPS_synth_lapl"  width="960" height="540">
+  </div>
+
+ </br>
+
+  <a target="_blank"><div id="gt_square" class="img-zoom-result" style="position:absolute; overflow:hidden; top:0px; left:970px;"><div class="text-block"><p>Ground truth</p></div></div></a>
+  <a target="_blank"><div id="blur_square" class="img-zoom-result" style="position:absolute; overflow:hidden; top:270px; left:970px;"><div class="text-block"><p>Standard foveation</p></div></div></a>
+  <a target="_blank"><div id="L2ground_square" class="img-zoom-result" style="position:absolute; overflow:hidden; top:0px; left:1240px;"><div class="text-block"><p>L2</p></div></div></a>
+  <a target="_blank"><div id="L2synth_square" class="img-zoom-result" style="position:absolute; overflow:hidden; top:270px; left:1240px;"><div class="text-block"><p>L2 ours</p></div></div></a>
+  <a target="_blank"><div id="LPIPSground_square" class="img-zoom-result" style="position:absolute; overflow:hidden; top:0px; left:1510px;"><div class="text-block"><p>LPIPS</p></div></div></a>
+  <a target="_blank"><div id="LPIPSsynth_square" class="img-zoom-result" style="position:absolute; overflow:hidden; top:270px; left:1510px;"><div class="text-block"><p>LPIPS ours</p></div></div></a>
+
+
+
+ <!--laplacian level 1-->
+ <a target="_blank"><div id="gt_lapl_square" class="img-zoom-result"><div class="text-block"><p>Ground truth</p></div></div></a>
+ <a target="_blank"><div id="L2_ground_lapl_square" class="img-zoom-result"><div class="text-block"><p>L2</p></div></div></a>
+ <a target="_blank"><div id="L2_synth_lapl_square" class="img-zoom-result"><div class="text-block"><p>L2 ours</p></div></div></a>
+ <a target="_blank"><div id="LPIPS_ground_lapl_square" class="img-zoom-result"><div class="text-block"><p>LPIPS</p></div></div></a>
+ <a target="_blank"><div id="LPIPS_synth_lapl_square" class="img-zoom-result"><div class="text-block"><p>LPIPS ours</p></div></div></br></a>
+
+</div>
+
+<script>
+
+//var imagename = $( "#myselect option:selected" ).text();
+//var lapllevel = $( "#mylaplacian option:selected" ).text();
+
+var imagename = localStorage.getItem("imagename");
+var lapllevel = localStorage.getItem("lapllevel");
+if (imagename == null)
+{
+  imagename = "florence";
+}
+if (lapllevel == null)
+{
+  lapllevel = "0";
+}
+
+document.getElementById('gt_rings').src = "originals_rings/"+imagename+"_rings.jpg";
+
+document.getElementById('gt').src = "originals/"+imagename+".jpg";
+document.getElementById('blur').src = "blurred/"+imagename+"_048-035.jpg";
+document.getElementById('L2_ground').src = "foveated/L2/"+imagename+"/ground/"+imagename+"_ground_048-035.jpg";
+document.getElementById('L2_synth').src = "foveated/L2/"+imagename+"/synth/"+imagename+"_synth_048-035.jpg";
+document.getElementById('LPIPS_ground').src = "foveated/LPIPS/"+imagename+"/ground/"+imagename+"_ground_048-035.jpg";
+document.getElementById('LPIPS_synth').src = "foveated/LPIPS/"+imagename+"/synth/"+imagename+"_synth_048-035.jpg";
+//laplacian level 1
+document.getElementById('gt_lapl').src = "lapl/orig/"+imagename+"Pyr"+lapllevel+".jpg";
+document.getElementById('L2_ground_lapl').src = "lapl/L2/"+imagename+"/ground/"+imagename+"_ground_Pyr"+lapllevel+".jpg";
+document.getElementById('L2_synth_lapl').src = "lapl/L2/"+imagename+"/synth/"+imagename+"_synth_Pyr"+lapllevel+".jpg";
+document.getElementById('LPIPS_ground_lapl').src = "lapl/LPIPS/"+imagename+"/ground/"+imagename+"_ground_Pyr"+lapllevel+".jpg";
+document.getElementById('LPIPS_synth_lapl').src = "lapl/LPIPS/"+imagename+"/synth/"+imagename+"_synth_Pyr"+lapllevel+".jpg";
+
+
+//href links
+document.getElementById("gt_square").parentNode.setAttribute('href',"originals/"+imagename+".jpg");
+
+document.getElementById("blur_square").parentNode.setAttribute('href',"blurred/"+imagename+"_048-035.jpg");
+document.getElementById("L2ground_square").parentNode.setAttribute('href',"foveated/L2/"+imagename+"/ground/"+imagename+"_ground_048-035.jpg");
+document.getElementById("L2synth_square").parentNode.setAttribute('href',"foveated/L2/"+imagename+"/synth/"+imagename+"_synth_048-035.jpg");
+document.getElementById("LPIPSground_square").parentNode.setAttribute('href',"foveated/LPIPS/"+imagename+"/ground/"+imagename+"_ground_048-035.jpg");
+document.getElementById("LPIPSsynth_square").parentNode.setAttribute('href',"foveated/LPIPS/"+imagename+"/synth/"+imagename+"_synth_048-035.jpg");
+
+document.getElementById("gt_lapl_square").parentNode.setAttribute('href',"lapl/orig/"+imagename+"Pyr"+lapllevel+".jpg");
+document.getElementById("L2_ground_lapl_square").parentNode.setAttribute('href',"lapl/L2/"+imagename+"/ground/"+imagename+"_ground_Pyr"+lapllevel+".jpg");
+document.getElementById("L2_synth_lapl_square").parentNode.setAttribute('href',"lapl/L2/"+imagename+"/synth/"+imagename+"_synth_Pyr"+lapllevel+".jpg");
+document.getElementById("LPIPS_ground_lapl_square").parentNode.setAttribute('href',"lapl/LPIPS/"+imagename+"/ground/"+imagename+"_ground_Pyr"+lapllevel+".jpg");
+document.getElementById("LPIPS_synth_lapl_square").parentNode.setAttribute('href',"lapl/LPIPS/"+imagename+"/synth/"+imagename+"_synth_Pyr"+lapllevel+".jpg");
+
+
+
+
+// Initiate zoom effect:
+my_lens = undefined;
+my_lens = imageZoom("gt_rings", "gt_square", my_lens);
+imageZoom("gt", "gt_square", my_lens);
+imageZoom("blur","blur_square",my_lens);
+imageZoom("L2_ground","L2ground_square",my_lens);
+imageZoom("L2_synth","L2synth_square",my_lens);
+imageZoom("LPIPS_ground","LPIPSground_square",my_lens);
+imageZoom("LPIPS_synth","LPIPSsynth_square",my_lens);
+//lapl level 1
+imageZoom("gt_lapl", "gt_lapl_square", my_lens);
+imageZoom("L2_ground_lapl", "L2_ground_lapl_square", my_lens);
+imageZoom("L2_synth_lapl", "L2_synth_lapl_square", my_lens);
+imageZoom("LPIPS_ground_lapl", "LPIPS_ground_lapl_square", my_lens);
+imageZoom("LPIPS_synth_lapl", "LPIPS_synth_lapl_square", my_lens);
+
+
+</script>
+
+</body>
+</html>
